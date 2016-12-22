@@ -847,3 +847,19 @@ func (b *Bot) GetFileDirectURL(fileID string) (string, error) {
 	}
 	return "https://api.telegram.org/file/bot" + b.Token + "/" + f.FilePath, nil
 }
+
+// EditMessageReplyMarkup edit reply markup for provided message
+func (b *Bot) EditMessageReplyMarkup(message Message, markup ReplyMarkup) error {
+	params := map[string]interface{}{
+		"chat_id":      message.Chat.Destination(),
+		"message_id":   message.ID,
+		"reply_markup": markup,
+	}
+
+	_, err := sendCommand("editMessageReplyMarkup", b.Token, params)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
