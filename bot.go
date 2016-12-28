@@ -90,7 +90,7 @@ func (b *Bot) poll(
 }
 
 // SendMessage sends a text message to recipient.
-func (b *Bot) SendMessage(recipient Recipient, message string, options *SendOptions) error {
+func (b *Bot) SendMessage(recipient Recipient, message string, options *SendOptions) (Message, error) {
 	params := map[string]string{
 		"chat_id": recipient.Destination(),
 		"text":    message,
@@ -102,24 +102,25 @@ func (b *Bot) SendMessage(recipient Recipient, message string, options *SendOpti
 
 	responseJSON, err := sendCommand("sendMessage", b.Token, params)
 	if err != nil {
-		return err
+		return Message{}, err
 	}
 
 	var responseRecieved struct {
 		Ok          bool
 		Description string
+		Result      Message
 	}
 
 	err = json.Unmarshal(responseJSON, &responseRecieved)
 	if err != nil {
-		return err
+		return Message{}, err
 	}
 
 	if !responseRecieved.Ok {
-		return fmt.Errorf("telebot: %s", responseRecieved.Description)
+		return Message{}, fmt.Errorf("telebot: %s", responseRecieved.Description)
 	}
 
-	return nil
+	return responseRecieved.Result, nil
 }
 
 // ForwardMessage forwards a message to recipient.
@@ -862,4 +863,39 @@ func (b *Bot) EditMessageReplyMarkup(message Message, markup ReplyMarkup) error 
 	}
 
 	return nil
+}
+
+// EditMessageText edit reply markup for provided message
+func (b *Bot) EditMessageText(recipient Recipient, messageID int, message string, options *SendOptions) (Message, error) {
+	params := map[string]string{
+		"chat_id":    recipient.Destination(),
+		"message_id": strconv.Itoa(messageID),
+		"text":       message,
+	}
+
+	if options != nil {
+		embedSendOptions(params, options)
+	}
+
+	responseJSON, err := sendCommand("editMessageText", b.Token, params)
+	if err != nil {
+		return Message{}, err
+	}
+
+	var responseRecieved struct {
+		Ok          bool
+		Description string
+		Result      Message
+	}
+
+	err = json.Unmarshal(responseJSON, &responseRecieved)
+	if err != nil {
+		return Message{}, err
+	}
+
+	if !responseRecieved.Ok {
+		return Message{}, fmt.Errorf("telebot: %s", responseRecieved.Description)
+	}
+
+	return responseRecieved.Result, nil
 }
